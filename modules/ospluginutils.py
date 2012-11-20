@@ -11,7 +11,7 @@ PUPPET_MANIFEST_DIR = os.path.join(PUPPET_DIR, "manifests")
 PUPPET_TEMPLATE_DIR = os.path.join(PUPPET_DIR, "templates")
 
 class NovaConfig(object):
-    """ 
+    """
     Helper class to create puppet manifest entries for nova_config
     """
     options = {}
@@ -29,6 +29,9 @@ class NovaConfig(object):
         entry += "}"
         return entry
 
+class PackStackError(Exception):
+    pass
+
 def getManifestTemplate(template_name):
     with open(os.path.join(PUPPET_TEMPLATE_DIR, template_name)) as fp:
         return fp.read()%controller.CONF
@@ -40,7 +43,7 @@ def appendManifestFile(manifest_name, data):
     with open(manifestfile, 'a') as fp:
         fp.write("\n")
         fp.write(data)
-   
+
 def gethostlist(CONF):
     hosts = []
     for key,value in CONF.items():
@@ -56,4 +59,11 @@ def gethostlist(CONF):
                     hosts.append(host)
     return hosts
 
-                                         
+# If installing a seperate API server then we need to change the HOST used
+# in the keystone templates to the API server
+def setEndpoint(CONF, host):
+  host_ep = host+"_EP"
+  controller.CONF[host_ep] = controller.CONF[host]
+  if controller.CONF['CONFIG_API_INSTALL'] == 'y':
+      controller.CONF[host_ep] = controller.CONF['CONFIG_API_HOST']
+

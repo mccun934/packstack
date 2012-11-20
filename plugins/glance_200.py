@@ -10,7 +10,7 @@ import uuid
 import engine_validators as validate
 import basedefs
 import common_utils as utils
-from ospluginutils import getManifestTemplate, appendManifestFile
+from ospluginutils import getManifestTemplate, appendManifestFile, setEndpoint
 
 # Controller object will be initialized from main flow
 controller = None
@@ -64,6 +64,9 @@ def initSequences(controller):
     controller.addSequence("Installing Glance", [], [], glancesteps)
 
 def createkeystonemanifest():
+
+    setEndpoint(controller.CONF, 'CONFIG_GLANCE_HOST')
+
     manifestfile = "%s_keystone.pp"%controller.CONF['CONFIG_KEYSTONE_HOST']
     manifestdata = getManifestTemplate("keystone_glance.pp")
     appendManifestFile(manifestfile, manifestdata)

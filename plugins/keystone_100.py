@@ -11,6 +11,8 @@ import engine_validators as validate
 import basedefs
 import common_utils as utils
 
+from ospluginutils import setEndpoint
+
 # Controller object will be initialized from main flow
 controller = None
 
@@ -84,6 +86,9 @@ def initSequences(controller):
     controller.addSequence("Installing Keystone", [], [], keystonesteps)
 
 def createmanifest():
+
+    setEndpoint(controller.CONF, 'CONFIG_KEYSTONE_HOST')
+
     with open(PUPPET_MANIFEST_TEMPLATE) as fp:
         manifestdata = fp.read()
     manifestdata = manifestdata%controller.CONF

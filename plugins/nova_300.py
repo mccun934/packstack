@@ -7,7 +7,7 @@ import os
 
 import engine_validators as validate
 import common_utils as utils
-from ospluginutils import NovaConfig, getManifestTemplate, appendManifestFile
+from ospluginutils import NovaConfig, getManifestTemplate, appendManifestFile, setEndpoint
 
 # Controller object will be initialized from main flow
 controller = None
@@ -183,6 +183,9 @@ def createapimanifest():
     appendManifestFile(manifestfile, manifestdata)
 
 def createkeystonemanifest():
+
+    setEndpoint(controller.CONF, 'CONFIG_NOVA_API_HOST')
+
     manifestfile = "%s_keystone.pp"%controller.CONF['CONFIG_KEYSTONE_HOST']
     manifestdata = getManifestTemplate("keystone_nova.pp")
     appendManifestFile(manifestfile, manifestdata)

@@ -9,7 +9,7 @@ import uuid
 import engine_validators as validate
 import basedefs
 import common_utils as utils
-from ospluginutils import NovaConfig, getManifestTemplate, appendManifestFile
+from ospluginutils import NovaConfig, getManifestTemplate, appendManifestFile, setEndpoint
 
 # Controller object will be initialized from main flow
 controller = None
@@ -101,6 +101,9 @@ def initSequences(controller):
     if controller.CONF['CONFIG_SWIFT_INSTALL'] != 'y':
         return
 
+    # TODO : multiple proxy's not supported yet
+    controller.CONF['CONFIG_SWIFT_PROXY'] = controller.CONF['CONFIG_SWIFT_PROXY_HOSTS'].split(',')[0]
+
     steps = [
              {'title': 'Adding Swift Keystone Manifest entries', 'functions':[createkeystonemanifest]},
              {'title': 'Creating OS Swift builder Manifests', 'functions':[createbuildermanifest]},
@@ -111,8 +114,10 @@ def initSequences(controller):
     controller.addSequence("Installing OpenStack Swift", [], [], steps)
 
 def createkeystonemanifest():
+
+    setEndpoint(controller.CONF, 'CONFIG_SWIFT_PROXY')
+
     manifestfile = "%s_keystone.pp"%controller.CONF['CONFIG_KEYSTONE_HOST']
-    controller.CONF['CONFIG_SWIFT_PROXY'] = controller.CONF['CONFIG_SWIFT_PROXY_HOSTS'].split(',')[0]
     manifestdata = getManifestTemplate("keystone_swift.pp")
     appendManifestFile(manifestfile, manifestdata)
 
