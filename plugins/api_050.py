@@ -37,6 +37,18 @@ def initConfig(controllerObject):
                    "USE_DEFAULT"     : False,
                    "NEED_CONFIRM"    : False,
                    "CONDITION"       : False },
+                  {"CMD_OPTION"      : "api-ssl",
+                   "USAGE"           : "Should the endpoint api server use http over ssl ?",
+                   "PROMPT"          : "Should the endpoint api server use http over ssl ?",
+                   "OPTION_LIST"     : ["y", "n"],
+                   "VALIDATION_FUNC" : validate.validateOptions,
+                   "DEFAULT_VALUE"   : "n",
+                   "MASK_INPUT"      : False,
+                   "LOOSE_VALIDATION": True,
+                   "CONF_NAME"       : "CONFIG_API_SSL",
+                   "USE_DEFAULT"     : False,
+                   "NEED_CONFIRM"    : False,
+                   "CONDITION"       : False },
                  ]
 
     groupDict = { "GROUP_NAME"            : "OSAPI",
@@ -73,25 +85,35 @@ def createmanifest():
     manifestfile = "%s_api.pp"%controller.CONF['CONFIG_API_HOST']
     manifestdata = getManifestTemplate("api.pp")
 
+    vhost_opts = ''
+    controller.CONF['CONFIG_PUBLIC_PROTO'] = 'http'
+    if controller.CONF['CONFIG_API_SSL'] == 'y':
+        controller.CONF['CONFIG_PUBLIC_PROTO'] = 'https' # used in the enpoints registered with keystone
+        vhost_opts += 'ssl=>true, '
+        manifestdata += """
+            file {'/etc/ssl/private': ensure => 'directory', mode   => '0700', notify=>Class['apache']}
+            file {'/etc/ssl/certs/pl.cert': ensure => '/etc/ssl/certs/localhost.crt', notify=>Class['apache'] }
+            file {'/etc/ssl/private/pl.key': ensure => '/etc/pki/tls/private/localhost.key', notify=>Class['apache'] }\n"""
+
     ports = ['5000']
-    manifestdata += """\napache::vhost::proxy{'keystone': port => '5000', dest => "http://%s:5000", }"""%controller.CONF['CONFIG_KEYSTONE_HOST']
+    manifestdata += """\napache::vhost::proxy{'keystone': port => '5000', dest => "http://%s:5000", %s}"""%(controller.CONF['CONFIG_KEYSTONE_HOST'], vhost_opts)
     if controller.CONF['CONFIG_GLANCE_INSTALL'] == 'y':
         ports.append('9292')
-        manifestdata += """\napache::vhost::proxy{'glance': port => '9292', dest => "http://%s:9292", }"""%controller.CONF['CONFIG_GLANCE_HOST']
+        manifestdata += """\napache::vhost::proxy{'glance': port => '9292', dest => "http://%s:9292", %s}"""%(controller.CONF['CONFIG_GLANCE_HOST'], vhost_opts)
     if controller.CONF['CONFIG_NOVA_INSTALL'] == 'y':
         ports.append('8774')
-        manifestdata += """\napache::vhost::proxy{'nova-api': port => '8774', dest => "http://%s:8774", }"""%controller.CONF['CONFIG_NOVA_API_HOST']
+        manifestdata += """\napache::vhost::proxy{'nova-api': port => '8774', dest => "http://%s:8774", %s}"""%(controller.CONF['CONFIG_NOVA_API_HOST'], vhost_opts)
         ports.append('8773')
-        manifestdata += """\napache::vhost::proxy{'nova-ec2': port => '8773', dest => "http://%s:8773", }"""%controller.CONF['CONFIG_NOVA_API_HOST']
+        manifestdata += """\napache::vhost::proxy{'nova-ec2': port => '8773', dest => "http://%s:8773", %s}"""%(controller.CONF['CONFIG_NOVA_API_HOST'], vhost_opts)
     if controller.CONF['CONFIG_CINDER_INSTALL'] == 'y':
         ports.append('8776')
-        manifestdata += """\napache::vhost::proxy{'cinder': port => '8776', dest => "http://%s:8776", }"""%controller.CONF['CONFIG_CINDER_HOST']
+        manifestdata += """\napache::vhost::proxy{'cinder': port => '8776', dest => "http://%s:8776", %s}"""%(controller.CONF['CONFIG_CINDER_HOST'], vhost_opts)
     if controller.CONF['CONFIG_SWIFT_INSTALL'] == 'y':
         ports.append('8080')
-        manifestdata += """\napache::vhost::proxy{'swift': port => '8080', dest => "http://%s:8080", }"""%controller.CONF['CONFIG_SWIFT_PROXY']
+        manifestdata += """\napache::vhost::proxy{'swift': port => '8080', dest => "http://%s:8080", %s}"""%(controller.CONF['CONFIG_SWIFT_PROXY'], vhost_opts)
     if controller.CONF['CONFIG_HORIZON_INSTALL'] == 'y':
         ports.append('80')
-        manifestdata += """\napache::vhost::proxy{'horizon': port => '80', dest => "http://%s:80", }"""%controller.CONF['CONFIG_HORIZON_HOST']
+        manifestdata += """\napache::vhost::proxy{'horizon': port => '80', dest => "http://%s:80", %s}"""%(controller.CONF['CONFIG_HORIZON_HOST'], vhost_opts)
 
     manifestdata += """\nfirewall { '001 endpoints incomming': proto    => 'tcp', dport    => [%s], action   => 'accept', }"""%",".join(["'%s'"%port for port in ports])
 

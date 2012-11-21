@@ -19,6 +19,7 @@ class {"keystone::endpoint":
     public_address  => "%(CONFIG_KEYSTONE_HOST_EP)s",
     admin_address  => "%(CONFIG_KEYSTONE_HOST)s",
     internal_address  => "%(CONFIG_KEYSTONE_HOST)s",
+    public_protocol => "%(CONFIG_PUBLIC_PROTO)s",
 }
 
 firewall { '001 keystone incomming':
